@@ -231,7 +231,13 @@ fabric.properties
 .idea/caches/build_file_checksums.ser
 
 # Artifacts
+mdn/artifacts/*
+mdn/csv_logs/*
 mdn/artifacts/lightning_logs/*
+mdn/artifacts/logs/*
+*.npy
+*.ckpt
+
 
 # Poetry
 poetry.lock
