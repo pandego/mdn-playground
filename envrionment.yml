@@ -1,0 +1,10 @@
+name: mdn-playground
+
+channels:
+  - defaults
+
+dependencies:
+  - python=3.11
+  - pip
+  - pip:
+    - poetry==1.8.2

@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "mdn"
+version = "0.1.0"
+description = "A playground for Mixture Density Networks."
+authors = ["Pandego"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+torch = "^2.3.0"
+pytorch-lightning = "^2.2.4"
+numpy = "^1.26.4"
+matplotlib = "^3.8.4"
+loguru = "^0.7.2"
+lightning = {extras = ["extra"], version = "^2.2.4"}
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
