@@ -25,24 +25,15 @@ Here are the key concepts and points from the paper:
 
 #### 2. Mixture Model:
 
-- The mixture model consists of multiple Gaussian components. The conditional probability density $p(t|x)$ is represented as a linear combination of these components.
-- Each component has parameters:
+- The mixture model consists of multiple components. The conditional probability density of the target data $p(t|x)$ is represented as a linear combination of these componentes (or kernel functions) in the following form:
 
-  - mixing coefficients $\alpha_i(x)$,
-  - means $\mu_i(x)$, 
-  - variances $\sigma_i(x)$,
+  $$p(t|x) = \sum_{i=1}^{m} \alpha_i(x)\phi_i(t|x)$$
   
-  which are functions of the input vector $x$.
+- Bishop has restricted it to kernel functions of Gaussian form, although they are not limited to:
 
-  - Here, the probability density of the target data is represented as a linear combination of kernel functions in the following form:
-    
-    $$p(t|x) = \sum_{i=1}^{m} \alpha_i(x)\phi_i(t|x)$$
-  
-  where the parameters $\alpha_i(x)$ are the _mixing coefficients_. The functions $\phi_i(t|x)$ represent the conditional density of the target vector $t$ for the $i^{\text{th}}$ kernel.
+  $$\phi_i(t|x) = \frac{1}{(2\pi)^{\text{c/2}}\sigma_i(x)^c} exp \left\lbrace - \frac{\lVert t-\mu_i(x) \rVert^2}{2\sigma_i(x)^2} \right\rbrace$$
 
-  - In the article, they have restricted it to kernel functions of Gaussian form:
-
-    $$\phi_i(t|x) = \frac{1}{(2\pi)^{\text{c/2}}\sigma_i(x)^c} exp \left\lbrace - \frac{\lVert t-\mu_i(x) \rVert^2}{2\sigma_i(x)^2} \right\rbrace$$
+- Each component will have as parameters: mixing coefficients $\alpha_i(x)$, means $\mu_i(x)$, and variances $\sigma_i^2(x)$, which are functions of the input vector $x$.
 
 #### 3. Neural Network Outputs:
 
