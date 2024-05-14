@@ -2,6 +2,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import pytorch_lightning as pl
+import yaml
+from loguru import logger
+from rich import print as rprint
 
 
 class MDN(nn.Module):
@@ -44,6 +47,9 @@ class MDNModel(pl.LightningModule):
         self.model = MDN(input_dim, output_dim, num_mixtures)
         self.learning_rate = learning_rate
 
+        # Save hyperparameters to ensure they are saved in the checkpoint
+        self.save_hyperparameters()
+
     def forward(self, x):
         return self.model(x)
 
@@ -64,3 +70,36 @@ class MDNModel(pl.LightningModule):
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate)
         return optimizer
+
+    @classmethod
+    def load_from_checkpoint(cls, checkpoint_path, **kwargs):
+        # Load checkpoint
+        checkpoint = torch.load(checkpoint_path,
+                                map_location=lambda storage, loc: storage)
+
+        # Extract hyperparameters from checkpoint
+        try:
+            hparams = checkpoint['hyper_parameters']
+
+            model = cls(
+                input_dim=hparams['input_dim'],
+                output_dim=hparams['output_dim'],
+                num_mixtures=hparams['num_mixtures'],
+                learning_rate=hparams.get('learning_rate', 1e-3),
+            )
+            rprint('Hyperparameters in checkpoint. Loading from checkpoint.')
+
+        except KeyError:
+            rprint('Hyperparameters not found in checkpoint. Loading defaults.')
+            # Create model with arguments passed in kwargs
+            model = cls(
+                input_dim=kwargs['input_dim'],
+                output_dim=kwargs['output_dim'],
+                num_mixtures=kwargs['num_mixtures'],
+                learning_rate=kwargs.get('learning_rate', 1e-3)
+            )
+
+        # Load state dict
+        model.load_state_dict(checkpoint['state_dict'])
+
+        return model

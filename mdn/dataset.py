@@ -1,6 +1,7 @@
 import numpy as np
 import torch
 from torch.utils.data import Dataset, DataLoader
+import pandas as pd
 
 
 class CustomDataset(Dataset):
@@ -28,6 +29,13 @@ def generate_data(n=2500):
     x_test_inv = np.linspace(-0.1, 1.1, n).reshape(-1, 1).astype(np.float32)
 
     return (x_train_inv, y_train_inv), x_test_inv
+
+
+def load_data_from_csv(file_path, target_column, delimiter=';'):
+    data = pd.read_csv(file_path, delimiter=delimiter)
+    x = data.drop(columns=[target_column]).values.astype(np.float32)
+    y = data[target_column].values.astype(np.float32).reshape(-1, 1)
+    return x, y
 
 
 def get_dataloader(x, y, batch_size=32, shuffle=True, num_workers=0):

@@ -104,9 +104,17 @@ poetry install
 
 ### 5. Run a Sample Experiment
 ```shell
-python example.py
+poetry run example
 ```
 
+---
+
+### TODOs
+1. **Experiment Tracking:** Integrate tools like MLflow or Weights & Biases for better experiment tracking and hyperparameter tuning.
+2. **Hyperparameter Tuning:** Use libraries like Optuna for automated hyperparameter optimization.
+3. **Additional Metrics:** Implement additional evaluation metrics such as Mean Absolute Error (MAE) or Root Mean Squared Error (RMSE).
+4. **Model Interpretability:** Explore techniques for interpreting MDNs and understanding the learned conditional probability distributions.
+5. **Improved Error Handling:** Implement more robust error handling and logging mechanisms to improve code reliability and maintainability.
 
 ---
 ## Misceallaneous notes

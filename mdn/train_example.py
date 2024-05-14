@@ -85,7 +85,9 @@ if __name__ == '__main__':
     checkpoint_callback = ModelCheckpoint(
         monitor='val_loss',
         save_top_k=1,
-        mode='min'
+        mode='min',
+        filename='best-checkpoint',
+        dirpath='checkpoints/'
     )
 
     early_stopping_callback = EarlyStopping(
@@ -94,19 +96,30 @@ if __name__ == '__main__':
         mode='min'
     )
 
-    loggers = TensorBoardLogger('artifacts/', name='lightning_logs')
-    # loggers = CSVLogger('./', name='lightning_logs')  # already default
+    logger_tb = TensorBoardLogger('artifacts/', name='lightning_logs')
+    logger_csv = CSVLogger('./', name='csv_logs')  # already default
 
     trainer = pl.Trainer(
         devices=4,
         max_epochs=3000,
-        min_epochs=1000,
+        min_epochs=50,
         log_every_n_steps=100,
         callbacks=[checkpoint_callback, early_stopping_callback],
-        logger=True,  # if True, default is CSVLogger, dir='lightning_logs/'
-        # logger=loggers  # if True, TensorBoardLogger
+        # logger=True,  # if True, default is CSVLogger, dir='lightning_logs/'
+        logger=[logger_tb, logger_csv]
     )
     trainer.fit(model, train_loader, val_loader)
+
+    # Save the model
+    trainer.save_checkpoint("artifacts/mdn_model.ckpt")
+
+    # Load the model for inference
+    model = MDNModel.load_from_checkpoint(
+        checkpoint_path="checkpoints/best-checkpoint.ckpt",
+        input_dim=1,
+        output_dim=1,
+        num_mixtures=3,
+    )
 
     model.eval()
     x_test_tensor = torch.tensor(x_test, dtype=torch.float32)

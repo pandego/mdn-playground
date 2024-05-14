@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "A playground for Mixture Density Networks."
 authors = ["Pandego"]
 readme = "README.md"
+packages = [{ include = "mdn", from = "." }]
 
 [tool.poetry.dependencies]
 python = "^3.11"
@@ -13,6 +14,17 @@ numpy = "^1.26.4"
 matplotlib = "^3.8.4"
 loguru = "^0.7.2"
 lightning = {extras = ["extra"], version = "^2.2.4"}
+pandas = "^2.2.2"
+
+[tool.poetry.group.test.dependencies]
+pytest = "^8.2.0"
+black = "^24.4.2"
+
+[tool.poetry.group.dev.dependencies]
+pre-commit = "^3.7.0"
+
+[tool.poetry.scripts]
+example = "mdn.train_example:main"
 
 [build-system]
 requires = ["poetry-core"]
