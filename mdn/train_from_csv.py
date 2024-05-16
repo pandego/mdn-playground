@@ -77,7 +77,7 @@ if __name__ == "__main__":
     batch_size = 64
     num_workers = 4
     max_epochs = 3000
-    min_epochs = 1000
+    min_epochs = 900
     train_loader = get_dataloader(
         x_train, y_train, batch_size=batch_size, num_workers=num_workers
     )
