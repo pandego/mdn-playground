@@ -1,7 +1,7 @@
 # Mixture Density Netwoks - A Playground
 ## Overview
-**Mixture Density Networks (MDNs)** are a class of neural network models introduced by Christopher M. Bishop in his 1994 paper ["Mixture Density Networks"](https://publications.aston.ac.uk/id/eprint/373/1/NCRG_94_004.pdf). 
-MDNs are designed to overcome the limitations of conventional neural networks when dealing with problems that involve predicting continuous variables, especially in cases where the relationship between input and output is multi-valued. 
+**Mixture Density Networks (MDNs)** are a class of neural network models introduced by Christopher M. Bishop in his 1994 paper ["Mixture Density Networks"](https://publications.aston.ac.uk/id/eprint/373/1/NCRG_94_004.pdf).
+MDNs are designed to overcome the limitations of conventional neural networks when dealing with problems that involve predicting continuous variables, especially in cases where the relationship between input and output is multi-valued.
 
 Here are the key concepts and points from the paper:
 
@@ -28,7 +28,7 @@ Here are the key concepts and points from the paper:
 - The mixture model consists of multiple components. The conditional probability density of the target data $p(t|x)$ is represented as a linear combination of these componentes (or kernel functions) in the following form:
 
   $$p(t|x) = \sum_{i=1}^{m} \alpha_i(x)\phi_i(t|x)$$
-  
+
 - Bishop has restricted it to kernel functions of Gaussian form, although they are not limited to:
 
   $$\phi_i(t|x) = \frac{1}{(2\pi)^{\text{c/2}}\sigma_i(x)^c} exp \left\lbrace - \frac{\lVert t-\mu_i(x) \rVert^2}{2\sigma_i(x)^2} \right\rbrace$$
@@ -74,7 +74,7 @@ Here are the key concepts and points from the paper:
 - Overestimating the number of kernels typically does not degrade performance significantly as redundant kernels can be effectively ignored by the network.
 
 ### Takeaways
-- Mixture Density Networks provide a powerful and flexible approach to modeling conditional probability distributions in neural networks. 
+- Mixture Density Networks provide a powerful and flexible approach to modeling conditional probability distributions in neural networks.
 - They are particularly useful for problems with multi-valued mappings and offer a more comprehensive representation of the data compared to traditional methods.
 
 By combining the strengths of neural networks and mixture models, MDNs enable more accurate and reliable predictions for complex real-world applications, as demonstrated in the examples of inverse problems and robot kinematics.
@@ -121,25 +121,25 @@ poetry run example
 ### Sometimes you might see the following warning message:
 - GPU with Tensor Cores:
     ```shell
-    You are using a CUDA device ('NVIDIA RTX A5000') that has Tensor Cores. 
-    To properly utilize them, you should set `torch.set_float32_matmul_precision('medium' | 'high')` which will trade-off precision for performance. 
+    You are using a CUDA device ('NVIDIA RTX A5000') that has Tensor Cores.
+    To properly utilize them, you should set `torch.set_float32_matmul_precision('medium' | 'high')` which will trade-off precision for performance.
     For more details, read https://pytorch.org/docs/stable/generated/torch.set_float32_matmul_precision.html#torch.set_float32_matmul_precision
     ```
 - Distributed computing:
   ```shell
-  The 'train_dataloader' does not have many workers which may be a bottleneck. 
+  The 'train_dataloader' does not have many workers which may be a bottleneck.
   Consider increasing the value of the `num_workers` argument` to `num_workers=15` in the `DataLoader` to improve performance.
   ```
-  ```shell 
+  ```shell
   It is recommended to use `self.log('val_loss', ..., sync_dist=True)` when logging on epoch level in distributed setting to accumulate the metric across devices.
   ```
 - Loggers:
   ```shell
-   Starting from v1.9.0, `tensorboardX` has been removed as a dependency of the `pytorch_lightning` package, due to potential conflicts with other packages in the ML ecosystem. 
-   For this reason, `logger=True` will use `CSVLogger` as the default logger, unless the `tensorboard` or `tensorboardX` packages are found. 
+   Starting from v1.9.0, `tensorboardX` has been removed as a dependency of the `pytorch_lightning` package, due to potential conflicts with other packages in the ML ecosystem.
+   For this reason, `logger=True` will use `CSVLogger` as the default logger, unless the `tensorboard` or `tensorboardX` packages are found.
    Please `pip install lightning[extra]` or one of them to enable TensorBoard support by default
   ```
   ```shell
-  The number of training batches (16) is smaller than the logging interval Trainer(log_every_n_steps=50). 
+  The number of training batches (16) is smaller than the logging interval Trainer(log_every_n_steps=50).
   Set a lower value for log_every_n_steps if you want to see logs for the training epoch.
   ```

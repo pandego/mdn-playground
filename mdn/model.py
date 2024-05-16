@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import pytorch_lightning as pl
 import torch
 import torch.nn as nn
@@ -13,7 +14,7 @@ class MDN(nn.Module):
             nn.Linear(input_dim, num_hidden),
             nn.Tanh(),
             nn.Linear(num_hidden, num_hidden),
-            nn.Tanh()
+            nn.Tanh(),
         )
         self.z_alpha = nn.Linear(num_hidden, num_mixtures)
         self.z_sigma = nn.Linear(num_hidden, num_mixtures * output_dim)
@@ -24,8 +25,9 @@ class MDN(nn.Module):
     def forward(self, x):
         hidden = self.hidden(x)
         alpha = F.softmax(self.z_alpha(hidden), dim=-1)
-        sigma = torch.exp(self.z_sigma(hidden)).view(-1, self.num_mixtures,
-                                                     self.output_dim)
+        sigma = torch.exp(self.z_sigma(hidden)).view(
+            -1, self.num_mixtures, self.output_dim
+        )
         mu = self.z_mu(hidden).view(-1, self.num_mixtures, self.output_dim)
         return alpha, sigma, mu
 
@@ -42,8 +44,9 @@ def mdn_loss(alpha, sigma, mu, target, eps=1e-8):
 
 
 class MDNModel(pl.LightningModule):
-    def __init__(self, input_dim, output_dim, num_mixtures, num_hidden,
-                 learning_rate=1e-3):
+    def __init__(
+        self, input_dim, output_dim, num_mixtures, num_hidden, learning_rate=1e-3
+    ):
         super(MDNModel, self).__init__()
         self.model = MDN(input_dim, output_dim, num_hidden, num_mixtures)
         self.learning_rate = learning_rate
@@ -58,20 +61,24 @@ class MDNModel(pl.LightningModule):
         x, y = batch
         alpha, sigma, mu = self(x)
         loss = mdn_loss(alpha, sigma, mu, y)
-        self.log('train_loss', loss)
+        self.log("train_loss", loss)
 
         # TODO: Implement logging Histograms and Images
         hist_and_img = False  # not fully implemented yet!
         if hist_and_img:
             # Log histogram of alpha values
-            self.logger.experiment.add_histogram('alpha', alpha, self.global_step)
-            self.logger.experiment.add_histogram('sigma', sigma, self.global_step)
-            self.logger.experiment.add_histogram('mu', mu, self.global_step)
+            self.logger.experiment.add_histogram("alpha", alpha, self.global_step)
+            self.logger.experiment.add_histogram("sigma", sigma, self.global_step)
+            self.logger.experiment.add_histogram("mu", mu, self.global_step)
 
             if batch_idx == 0:  # Log images once per epoch
                 sample_mode_image = self.sample_mode_image(alpha, mu)
-                self.logger.experiment.add_image('sample_mode', sample_mode_image,
-                                                 self.global_step, dataformats='HWC')
+                self.logger.experiment.add_image(
+                    "sample_mode",
+                    sample_mode_image,
+                    self.global_step,
+                    dataformats="HWC",
+                )
 
         return loss
 
@@ -79,7 +86,7 @@ class MDNModel(pl.LightningModule):
         x, y = batch
         alpha, sigma, mu = self(x)
         loss = mdn_loss(alpha, sigma, mu, y)
-        self.log('val_loss', loss, sync_dist=True)
+        self.log("val_loss", loss, sync_dist=True)
         return loss
 
     def configure_optimizers(self):
@@ -104,34 +111,35 @@ class MDNModel(pl.LightningModule):
     @classmethod
     def load_from_checkpoint(cls, checkpoint_path, **kwargs):
         # Load checkpoint
-        checkpoint = torch.load(checkpoint_path,
-                                map_location=lambda storage, loc: storage)
+        checkpoint = torch.load(
+            checkpoint_path, map_location=lambda storage, loc: storage
+        )
 
         # Extract hyperparameters from checkpoint
         try:
-            hparams = checkpoint['hyper_parameters']
+            hparams = checkpoint["hyper_parameters"]
 
             model = cls(
-                input_dim=hparams['input_dim'],
-                output_dim=hparams['output_dim'],
-                num_hidden=hparams['num_hidden'],
-                num_mixtures=hparams['num_mixtures'],
-                learning_rate=hparams.get('learning_rate', 1e-3),
+                input_dim=hparams["input_dim"],
+                output_dim=hparams["output_dim"],
+                num_hidden=hparams["num_hidden"],
+                num_mixtures=hparams["num_mixtures"],
+                learning_rate=hparams.get("learning_rate", 1e-3),
             )
-            rprint('Hyperparameters in checkpoint. Loading from checkpoint.')
+            rprint("Hyperparameters in checkpoint. Loading from checkpoint.")
 
         except KeyError:
-            rprint('Hyperparameters not found in checkpoint. Loading defaults.')
+            rprint("Hyperparameters not found in checkpoint. Loading defaults.")
             # Create model with arguments passed in kwargs
             model = cls(
-                input_dim=kwargs['input_dim'],
-                output_dim=kwargs['output_dim'],
-                num_hidden=kwargs['num_hidden'],
-                num_mixtures=kwargs['num_mixtures'],
-                learning_rate=kwargs.get('learning_rate', 1e-3)
+                input_dim=kwargs["input_dim"],
+                output_dim=kwargs["output_dim"],
+                num_hidden=kwargs["num_hidden"],
+                num_mixtures=kwargs["num_mixtures"],
+                learning_rate=kwargs.get("learning_rate", 1e-3),
             )
 
         # Load state dict
-        model.load_state_dict(checkpoint['state_dict'])
+        model.load_state_dict(checkpoint["state_dict"])
 
         return model

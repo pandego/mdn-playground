@@ -1,12 +1,12 @@
+# -*- coding: utf-8 -*-
 import matplotlib.pyplot as plt
 import numpy as np
 import pytorch_lightning as pl
 import torch
-from lightning.pytorch.loggers import TensorBoardLogger, CSVLogger
-from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
-
 from dataset import generate_data, get_dataloader
+from lightning.pytorch.loggers import CSVLogger, TensorBoardLogger
 from model import MDNModel
+from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
 
 
 def sample_mode(pi, mu):
@@ -32,7 +32,7 @@ def sample_preds(pi, sigma, mu, samples=10):
     return out
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     (x, y), x_test = generate_data()
 
     # Shuffle the data
@@ -48,55 +48,40 @@ if __name__ == '__main__':
     plt.xlabel("x")
     plt.ylabel("y")
     plt.title("Train Set")
-    plt.savefig('train_data.png')
+    plt.savefig("train_data.png")
     plt.close()
 
     plt.scatter(x_val, y_val, s=10, alpha=0.5)
     plt.xlabel("x")
     plt.ylabel("y")
     plt.title("Val Set")
-    plt.savefig('val_data.png')
+    plt.savefig("val_data.png")
     plt.close()
 
-    train_loader = get_dataloader(
-        x_train,
-        y_train,
-        batch_size=32,
-        num_workers=15
-    )
+    train_loader = get_dataloader(x_train, y_train, batch_size=32, num_workers=15)
     val_loader = get_dataloader(
-        x_val,
-        y_val,
-        batch_size=32,
-        shuffle=False,
-        num_workers=15
+        x_val, y_val, batch_size=32, shuffle=False, num_workers=15
     )
 
     # Define the model
     input_dim, output_dim, num_mixtures = x_train.shape[1], y_train.shape[1], 3
 
     model = MDNModel(
-        input_dim=input_dim,
-        output_dim=output_dim,
-        num_mixtures=num_mixtures
+        input_dim=input_dim, output_dim=output_dim, num_mixtures=num_mixtures
     )
 
     checkpoint_callback = ModelCheckpoint(
-        monitor='val_loss',
+        monitor="val_loss",
         save_top_k=1,
-        mode='min',
-        filename='best-checkpoint',
-        dirpath='checkpoints/'
+        mode="min",
+        filename="best-checkpoint",
+        dirpath="checkpoints/",
     )
 
-    early_stopping_callback = EarlyStopping(
-        monitor='val_loss',
-        patience=10,
-        mode='min'
-    )
+    early_stopping_callback = EarlyStopping(monitor="val_loss", patience=10, mode="min")
 
-    logger_tb = TensorBoardLogger('artifacts/', name='lightning_logs')
-    logger_csv = CSVLogger('./', name='csv_logs')  # already default
+    logger_tb = TensorBoardLogger("artifacts/", name="lightning_logs")
+    logger_csv = CSVLogger("./", name="csv_logs")  # already default
 
     trainer = pl.Trainer(
         devices=4,
@@ -105,7 +90,7 @@ if __name__ == '__main__':
         log_every_n_steps=100,
         callbacks=[checkpoint_callback, early_stopping_callback],
         # logger=True,  # if True, default is CSVLogger, dir='lightning_logs/'
-        logger=[logger_tb, logger_csv]
+        logger=[logger_tb, logger_csv],
     )
     trainer.fit(model, train_loader, val_loader)
 
@@ -129,25 +114,25 @@ if __name__ == '__main__':
 
     plt.figure(figsize=(8, 8))
     title = "Conditional Mode"
-    plt.plot(x_train, y_train, 'go', alpha=0.5, markerfacecolor='none')
-    plt.plot(x_test, cond_mode.detach().numpy(), 'r.')
+    plt.plot(x_train, y_train, "go", alpha=0.5, markerfacecolor="none")
+    plt.plot(x_test, cond_mode.detach().numpy(), "r.")
     plt.title(title)
-    plt.savefig(f'artifacts/{title}.png')
+    plt.savefig(f"artifacts/{title}.png")
     plt.close()
 
     plt.figure(figsize=(8, 8))
     title = "Means"
-    plt.plot(x_train, y_train, 'go', alpha=0.5, markerfacecolor='none')
-    plt.plot(x_test, mu.detach().numpy().reshape(-1, num_mixtures), 'r.')
+    plt.plot(x_train, y_train, "go", alpha=0.5, markerfacecolor="none")
+    plt.plot(x_test, mu.detach().numpy().reshape(-1, num_mixtures), "r.")
     plt.title(title)
-    plt.savefig(f'artifacts/{title}.png')
+    plt.savefig(f"artifacts/{title}.png")
     plt.close()
 
     plt.figure(figsize=(8, 8))
     title = "Sampled Predictions"
-    plt.plot(x_train, y_train, 'go', alpha=0.5, markerfacecolor='none')
+    plt.plot(x_train, y_train, "go", alpha=0.5, markerfacecolor="none")
     for i in range(preds.shape[1]):
-        plt.plot(x_test, preds[:, i, :].detach().numpy(), 'r.', alpha=0.3)
+        plt.plot(x_test, preds[:, i, :].detach().numpy(), "r.", alpha=0.3)
     plt.title(title)
-    plt.savefig(f'artifacts/{title}.png')
+    plt.savefig(f"artifacts/{title}.png")
     plt.close()

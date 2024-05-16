@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import argparse
 import csv
 import os
@@ -6,30 +7,34 @@ from datetime import datetime
 import numpy as np
 import pytorch_lightning as pl
 import torch
-from lightning.pytorch.loggers import TensorBoardLogger, CSVLogger
-from loguru import logger
-from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
-from sklearn.metrics import mean_absolute_error, mean_squared_error
-
 from dataset import generate_data, get_dataloader, load_data_from_csv
+from lightning.pytorch.loggers import CSVLogger, TensorBoardLogger
+from loguru import logger
 from model import MDNModel
+from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
 from sampler import sample_mode, sample_preds
-from visualization import plot_conditional_mode, plot_means, plot_sampled_predictions, \
-    plot_histogram, plot_scatter, plot_train_val_data
+from sklearn.metrics import mean_absolute_error, mean_squared_error
+from visualization import (
+    plot_conditional_mode,
+    plot_histogram,
+    plot_means,
+    plot_sampled_predictions,
+    plot_scatter,
+    plot_train_val_data,
+)
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Train MDN model")
+    parser.add_argument("--csv", type=str, help="Path to CSV file")
+    parser.add_argument("--target", type=str, help="Target column in CSV file")
     parser.add_argument(
-        '--csv', type=str, help="Path to CSV file")
-    parser.add_argument(
-        '--target', type=str, help="Target column in CSV file")
-    parser.add_argument(
-        '--delimiter', type=str, help="Delimiter in CSV file", default=";")
+        "--delimiter", type=str, help="Delimiter in CSV file", default=";"
+    )
     return parser.parse_args()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     logger.info("Initializing training...!")
 
     args = parse_args()
@@ -44,7 +49,7 @@ if __name__ == '__main__':
     time_now = datetime.now().strftime("%Y%m%d_%H%M%S")
     artifacts_path = f"artifacts/{dataset_name}"
     # run_path = f"{artifacts_path}/{time_now}"  # comment if you use parallelism
-    run_path = f"{artifacts_path}/{"reference_run"}"  # uncomment if you use parallelism
+    run_path = f"{artifacts_path}/{'reference_run'}"  # uncomment if you use parallelism
     os.makedirs(run_path, exist_ok=True)
 
     if args.csv:
@@ -74,60 +79,53 @@ if __name__ == '__main__':
     max_epochs = 3000
     min_epochs = 1000
     train_loader = get_dataloader(
-        x_train,
-        y_train,
-        batch_size=batch_size,
-        num_workers=num_workers
+        x_train, y_train, batch_size=batch_size, num_workers=num_workers
     )
     val_loader = get_dataloader(
-        x_val,
-        y_val,
-        batch_size=batch_size,
-        shuffle=False,
-        num_workers=num_workers
+        x_val, y_val, batch_size=batch_size, shuffle=False, num_workers=num_workers
     )
 
     # Define the model
-    input_dim, output_dim, num_hidden, num_mixtures = x_train.shape[1], y_train.shape[
-        1], 50, 3
+    input_dim, output_dim, num_hidden, num_mixtures = (
+        x_train.shape[1],
+        y_train.shape[1],
+        50,
+        3,
+    )
 
     model = MDNModel(
         input_dim=input_dim,
         output_dim=output_dim,
         num_hidden=num_hidden,
-        num_mixtures=num_mixtures
+        num_mixtures=num_mixtures,
     )
 
     checkpoint_callback = ModelCheckpoint(
-        monitor='val_loss',
+        monitor="val_loss",
         save_top_k=1,
-        mode='min',
-        filename='best-checkpoint',
-        dirpath=f'{run_path}/checkpoints'
+        mode="min",
+        filename="best-checkpoint",
+        dirpath=f"{run_path}/checkpoints",
     )
 
-    early_stopping_callback = EarlyStopping(
-        monitor='val_loss',
-        patience=10,
-        mode='min'
-    )
+    early_stopping_callback = EarlyStopping(monitor="val_loss", patience=10, mode="min")
 
-    logger_tb = TensorBoardLogger(f'{artifacts_path}/logs', name='lightning_logs')
-    logger_csv = CSVLogger(f'{artifacts_path}/logs', name='csv_logs')  # already default
+    logger_tb = TensorBoardLogger(f"{artifacts_path}/logs", name="lightning_logs")
+    logger_csv = CSVLogger(f"{artifacts_path}/logs", name="csv_logs")  # already default
 
     trainer = pl.Trainer(
         devices=-1,  # if more than 1, consider use 'if trainer.is_global_zero'
-        strategy='ddp',  # Use Distributed Data Parallel
+        strategy="ddp",  # Use Distributed Data Parallel
         enable_progress_bar=True,
         enable_model_summary=True,
         max_epochs=max_epochs,
         min_epochs=min_epochs,
         log_every_n_steps=10,
         gradient_clip_val=1.0,
-        gradient_clip_algorithm='norm',
+        gradient_clip_algorithm="norm",
         callbacks=[checkpoint_callback, early_stopping_callback],
         # logger=True,      # if True, default is CSVLogger, dir='lightning_logs/'
-        logger=[logger_tb, logger_csv]
+        logger=[logger_tb, logger_csv],
     )
 
     try:
@@ -153,7 +151,7 @@ if __name__ == '__main__':
 
     # Save the model
     trainer.save_checkpoint(f"{run_path}/mdn_model.ckpt")
-    logger.success(f'Model saved at {run_path}/mdn_model.ckpt')
+    logger.success(f"Model saved at {run_path}/mdn_model.ckpt")
 
     # Load the model for inference
     model = MDNModel.load_from_checkpoint(
@@ -164,7 +162,7 @@ if __name__ == '__main__':
         num_mixtures=num_mixtures,
     )
 
-    logger.info(f'Model Summary: \n{model.eval()}')
+    logger.info(f"Model Summary: \n{model.eval()}")
     x_test_tensor = torch.tensor(x_test, dtype=torch.float32)
     alpha, sigma, mu = model(x_test_tensor)
 
@@ -197,18 +195,44 @@ if __name__ == '__main__':
         file_exists = os.path.isfile(metrics_file)
 
         # TODO: This is not the best way to save metrics, but it works for now
-        with open(metrics_file, "a", newline='') as f:
+        with open(metrics_file, "a", newline="") as f:
             writer = csv.writer(f)
             if not file_exists:
                 # Write header if file does not exist
-                writer.writerow(["run_path", "dataset_name", "r2", "mae", "mse",
-                                 "num_hidden", "num_mixtures", "learning_rate",
-                                 "batch_size", "num_workers", "min_epochs",
-                                 "training_split", "validation_split"])
+                writer.writerow(
+                    [
+                        "run_path",
+                        "dataset_name",
+                        "r2",
+                        "mae",
+                        "mse",
+                        "num_hidden",
+                        "num_mixtures",
+                        "learning_rate",
+                        "batch_size",
+                        "num_workers",
+                        "min_epochs",
+                        "training_split",
+                        "validation_split",
+                    ]
+                )
             # Write metrics
-            writer.writerow([run_path, dataset_name, r2, mae, mse,
-                             num_hidden, num_mixtures, model.learning_rate,
-                             batch_size, num_workers, min_epochs,
-                             training_split, validation_split])
+            writer.writerow(
+                [
+                    run_path,
+                    dataset_name,
+                    r2,
+                    mae,
+                    mse,
+                    num_hidden,
+                    num_mixtures,
+                    model.learning_rate,
+                    batch_size,
+                    num_workers,
+                    min_epochs,
+                    training_split,
+                    validation_split,
+                ]
+            )
 
     logger.info("All done! Have a nice day! 😊")

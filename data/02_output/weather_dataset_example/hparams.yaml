@@ -1,0 +1,11 @@
+input_dim: 6
+output_dim: 1
+num_mixtures: 3
+learning_rate: 0.001
+num_hidden: 50
+batch_size: 32
+num_workers: 15
+max_epochs: 3000
+training_split: 0.7
+validation_split: 0.2
+testing_split: 0.10000000000000009

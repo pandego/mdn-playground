@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import numpy as np
 import torch
 
@@ -30,8 +31,9 @@ def sample_mode(alpha: torch.Tensor, mu: torch.Tensor) -> torch.Tensor:
     return out
 
 
-def sample_preds(alpha: torch.Tensor, sigma: torch.Tensor, mu: torch.Tensor,
-                 samples: int = 10) -> torch.Tensor:
+def sample_preds(
+    alpha: torch.Tensor, sigma: torch.Tensor, mu: torch.Tensor, samples: int = 10
+) -> torch.Tensor:
     """
     Samples predictions from the mixture model for each data point.
 

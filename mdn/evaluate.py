@@ -1,9 +1,9 @@
+# -*- coding: utf-8 -*-
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
-from loguru import logger
-
 from dataset import generate_data
+from loguru import logger
 from model import MDNModel
 
 
@@ -30,7 +30,7 @@ def sample_preds(pi, sigma, mu, samples=10):
     return out
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     logger.info("Evaluating model...")
 
     # Generate test data
@@ -40,7 +40,8 @@ if __name__ == '__main__':
     # x_train, y_train = load_data_from_csv('path_to_csv', 'target_column')
 
     model = MDNModel.load_from_checkpoint(
-        checkpoint_path="checkpoints/best-checkpoint.ckpt")
+        checkpoint_path="checkpoints/best-checkpoint.ckpt"
+    )
     model.eval()
 
     x_test_tensor = torch.tensor(x_test, dtype=torch.float32)
@@ -51,25 +52,25 @@ if __name__ == '__main__':
 
     plt.figure(figsize=(8, 8))
     title = "Conditional Mode"
-    plt.plot(x_train, y_train, 'go', alpha=0.5, markerfacecolor='none')
-    plt.plot(x_test, cond_mode.detach().numpy(), 'r.')
+    plt.plot(x_train, y_train, "go", alpha=0.5, markerfacecolor="none")
+    plt.plot(x_test, cond_mode.detach().numpy(), "r.")
     plt.title(title)
-    plt.savefig(f'artifacts/eval_{title}.png')
+    plt.savefig(f"artifacts/eval_{title}.png")
     plt.close()
 
     plt.figure(figsize=(8, 8))
     title = "Means"
-    plt.plot(x_train, y_train, 'go', alpha=0.5, markerfacecolor='none')
-    plt.plot(x_test, mu.detach().numpy().reshape(-1, 30), 'r.')
+    plt.plot(x_train, y_train, "go", alpha=0.5, markerfacecolor="none")
+    plt.plot(x_test, mu.detach().numpy().reshape(-1, 30), "r.")
     plt.title(title)
-    plt.savefig(f'artifacts/eval_{title}.png')
+    plt.savefig(f"artifacts/eval_{title}.png")
     plt.close()
 
     plt.figure(figsize=(8, 8))
     title = "Sampled Predictions"
-    plt.plot(x_train, y_train, 'go', alpha=0.5, markerfacecolor='none')
+    plt.plot(x_train, y_train, "go", alpha=0.5, markerfacecolor="none")
     for i in range(preds.shape[1]):
-        plt.plot(x_test, preds[:, i, :].detach().numpy(), 'r.', alpha=0.3)
+        plt.plot(x_test, preds[:, i, :].detach().numpy(), "r.", alpha=0.3)
     plt.title(title)
-    plt.savefig(f'artifacts/eval_{title}.png')
+    plt.savefig(f"artifacts/eval_{title}.png")
     plt.close()
