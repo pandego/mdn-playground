@@ -1,0 +1,23 @@
+# TODO: implement a real train_params files
+
+train_params:
+  input_dim: 1
+  output_dim: 1
+  num_mixtures: 3
+  learning_rate: 0.001
+  epochs: 100
+  batch_size: 32
+  optimizer: adam
+  loss: mse
+  metrics: mse
+  early_stopping: True
+  early_stopping_patience: 10
+  early_stopping_min_delta: 0.001
+  early_stopping_monitor: val_loss
+  early_stopping_mode: min
+  reduce_lr_on_plateau: True
+  reduce_lr_on_plateau_factor: 0.1
+  reduce_lr_on_plateau_patience: 5
+  reduce_lr_on_plateau_min_lr: 0.0001
+  reduce_lr_on_plateau_monitor: val_loss
+  reduce_lr_on_plateau_mode: min

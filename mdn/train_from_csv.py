@@ -1,105 +1,100 @@
 import argparse
+import csv
+import os
+from datetime import datetime
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pytorch_lightning as pl
 import torch
 from lightning.pytorch.loggers import TensorBoardLogger, CSVLogger
 from loguru import logger
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
+from sklearn.metrics import mean_absolute_error, mean_squared_error
 
 from dataset import generate_data, get_dataloader, load_data_from_csv
 from model import MDNModel
-
-
-def sample_mode(pi, mu):
-    _, max_component = torch.max(pi, 1)
-    out = torch.zeros_like(mu[:, 0, :])
-    for i in range(pi.shape[0]):
-        out[i] = mu[i, max_component[i], :]
-    return out
-
-
-def sample_preds(pi, sigma, mu, samples=10):
-    N, K, T = mu.shape
-    out = torch.zeros(N, samples, T)
-    for i in range(N):
-        for j in range(samples):
-            u = np.random.uniform()
-            prob_sum = 0
-            for k in range(K):
-                prob_sum += pi[i, k]
-                if u < prob_sum:
-                    out[i, j] = torch.normal(mu[i, k], sigma[i, k])
-                    break
-    return out
+from sampler import sample_mode, sample_preds
+from visualization import plot_conditional_mode, plot_means, plot_sampled_predictions, \
+    plot_histogram, plot_scatter, plot_train_val_data
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Train MDN model")
-    parser.add_argument('--csv', type=str, help="Path to CSV file")
-    parser.add_argument('--target', type=str, help="Target column in CSV file")
-    parser.add_argument('--delimiter', type=str, help="Delimiter in CSV file",
-                        default=";")
+    parser.add_argument(
+        '--csv', type=str, help="Path to CSV file")
+    parser.add_argument(
+        '--target', type=str, help="Target column in CSV file")
+    parser.add_argument(
+        '--delimiter', type=str, help="Delimiter in CSV file", default=";")
     return parser.parse_args()
 
 
 if __name__ == '__main__':
-    logger.info("Here is a log message!")
+    logger.info("Initializing training...!")
 
     args = parse_args()
 
+    # take the dataset name from the csv file
+    if args.csv:
+        dataset_name = args.csv.split("/")[-1].split(".")[0]
+    else:
+        dataset_name = "example_dataset"
+
+    # Define run path for artifacts
+    time_now = datetime.now().strftime("%Y%m%d_%H%M%S")
+    artifacts_path = f"artifacts/{dataset_name}"
+    # run_path = f"{artifacts_path}/{time_now}"  # comment if you use parallelism
+    run_path = f"{artifacts_path}/{"reference_run"}"  # uncomment if you use parallelism
+    os.makedirs(run_path, exist_ok=True)
+
     if args.csv:
         x, y = load_data_from_csv(args.csv, args.target, args.delimiter)
-        plot_example = True
     else:
-        (x, y), x_test = generate_data()
-        plot_example = False
+        (x, y), _ = generate_data()
 
-    # Shuffle the data
+    # Shuffle the data prior to splitting
     np.random.seed(42)
     idx = np.random.permutation(len(x))
     x, y = x[idx], y[idx]
 
-    # Split the data into train and val sets
-    x_train, y_train = x[:2000], y[:2000]
-    x_val, y_val = x[2000:], y[2000:]
+    # Split the data into train, val, and test sets
+    training_split = 0.7  # 70% of data for training
+    validation_split = 0.2  # 20% of data for validation, remaining 10% for test
+    split1 = int(training_split * len(x))
+    split2 = split1 + int(validation_split * len(x))
+    x_train, y_train = x[:split1], y[:split1]
+    x_val, y_val = x[split1:split2], y[split1:split2]
+    x_test, y_test = x[split2:], y[split2:]
 
-    if plot_example:
-        plt.scatter(x_train, y_train, s=10, alpha=0.5)
-        plt.xlabel("x")
-        plt.ylabel("y")
-        plt.title("Train Set")
-        plt.savefig('train_data.png')
-        plt.close()
+    if not args.csv:
+        plot_train_val_data(x_train, y_train, x_val, y_val, run_path)
 
-        plt.scatter(x_val, y_val, s=10, alpha=0.5)
-        plt.xlabel("x")
-        plt.ylabel("y")
-        plt.title("Val Set")
-        plt.savefig('val_data.png')
-        plt.close()
-
+    batch_size = 64
+    num_workers = 4
+    max_epochs = 3000
+    min_epochs = 1000
     train_loader = get_dataloader(
         x_train,
         y_train,
-        batch_size=32,
-        num_workers=15
+        batch_size=batch_size,
+        num_workers=num_workers
     )
     val_loader = get_dataloader(
         x_val,
         y_val,
-        batch_size=32,
+        batch_size=batch_size,
         shuffle=False,
-        num_workers=15
+        num_workers=num_workers
     )
 
     # Define the model
-    input_dim, output_dim, num_mixtures = x_train.shape[1], y_train.shape[1], 3
+    input_dim, output_dim, num_hidden, num_mixtures = x_train.shape[1], y_train.shape[
+        1], 50, 3
 
     model = MDNModel(
         input_dim=input_dim,
         output_dim=output_dim,
+        num_hidden=num_hidden,
         num_mixtures=num_mixtures
     )
 
@@ -108,7 +103,7 @@ if __name__ == '__main__':
         save_top_k=1,
         mode='min',
         filename='best-checkpoint',
-        dirpath='checkpoints/'
+        dirpath=f'{run_path}/checkpoints'
     )
 
     early_stopping_callback = EarlyStopping(
@@ -117,66 +112,103 @@ if __name__ == '__main__':
         mode='min'
     )
 
-    logger_tb = TensorBoardLogger('artifacts/logs', name='lightning_logs')
-    logger_csv = CSVLogger('artifacts/logs', name='csv_logs')  # already default
+    logger_tb = TensorBoardLogger(f'{artifacts_path}/logs', name='lightning_logs')
+    logger_csv = CSVLogger(f'{artifacts_path}/logs', name='csv_logs')  # already default
 
     trainer = pl.Trainer(
-        devices=4,
-        max_epochs=3000,
-        min_epochs=10,
-        log_every_n_steps=100,
+        devices=-1,  # if more than 1, consider use 'if trainer.is_global_zero'
+        strategy='ddp',  # Use Distributed Data Parallel
+        enable_progress_bar=True,
+        enable_model_summary=True,
+        max_epochs=max_epochs,
+        min_epochs=min_epochs,
+        log_every_n_steps=10,
+        gradient_clip_val=1.0,
+        gradient_clip_algorithm='norm',
         callbacks=[checkpoint_callback, early_stopping_callback],
-        # logger=True,  # if True, default is CSVLogger, dir='lightning_logs/'
+        # logger=True,      # if True, default is CSVLogger, dir='lightning_logs/'
         logger=[logger_tb, logger_csv]
     )
-    trainer.fit(model, train_loader, val_loader)
+
+    try:
+        trainer.fit(model, train_loader, val_loader)
+        logger.success("Training completed! 🎉🎉🎉")
+    except Exception as e:
+        logger.error(f"Training failed with error: {e}")
+        # exit(1)  # comment if you want to proceed with the saving of the model, etc
+
+    # TODO: This is not the best way to save hyperparameters, but it works for now
+    with open(f"{run_path}/hparams.yaml", "w") as f:
+        f.write(f"input_dim: {input_dim}\n")
+        f.write(f"output_dim: {output_dim}\n")
+        f.write(f"num_mixtures: {num_mixtures}\n")
+        f.write(f"learning_rate: {model.learning_rate}\n")
+        f.write(f"num_hidden: {num_hidden}\n")
+        f.write(f"batch_size: 32\n")
+        f.write(f"num_workers: 15\n")
+        f.write(f"max_epochs: {max_epochs}\n")
+        f.write(f"training_split: {training_split}\n")
+        f.write(f"validation_split: {validation_split}\n")
+        f.write(f"testing_split: {1 - (training_split + validation_split)}\n")
 
     # Save the model
-    trainer.save_checkpoint("artifacts/weather_dataset/mdn_model.ckpt")
+    trainer.save_checkpoint(f"{run_path}/mdn_model.ckpt")
+    logger.success(f'Model saved at {run_path}/mdn_model.ckpt')
 
     # Load the model for inference
     model = MDNModel.load_from_checkpoint(
-        checkpoint_path="artifacts/weather_dataset/mdn_model.ckpt",
+        checkpoint_path=f"{run_path}/checkpoints/best-checkpoint.ckpt",
         input_dim=input_dim,
         output_dim=output_dim,
+        num_hidden=num_hidden,
         num_mixtures=num_mixtures,
     )
 
-    model.eval()
+    logger.info(f'Model Summary: \n{model.eval()}')
     x_test_tensor = torch.tensor(x_test, dtype=torch.float32)
-    pi, sigma, mu = model(x_test_tensor)
+    alpha, sigma, mu = model(x_test_tensor)
 
-    cond_mode = sample_mode(pi, mu)
-    preds = sample_preds(pi, sigma, mu, samples=10)
+    cond_mode = sample_mode(alpha, mu)
+    preds = sample_preds(alpha, sigma, mu, samples=10)
 
-    # Save the predictions
-    np.save("artifacts/cond_mode.npy", cond_mode.detach().numpy())
-    np.save("artifacts/preds.npy", preds.detach().numpy())
-    np.save("artifacts/mu.npy", mu.detach().numpy())
+    if not args.csv:
+        plot_conditional_mode(x_train, y_train, x_test, cond_mode, run_path)
+        plot_means(x_train, y_train, x_test, mu, num_mixtures, run_path)
+        plot_sampled_predictions(x_train, y_train, x_test, preds, run_path)
 
+    if args.csv:
+        # Flatten the predictions for histogram comparison
+        y_pred = preds.mean(axis=1).detach().numpy().flatten()
+        y_test_flat = y_test.flatten()
 
-    if plot_example:
-        plt.figure(figsize=(8, 8))
-        title = "Conditional Mode"
-        plt.plot(x_train, y_train, 'go', alpha=0.5, markerfacecolor='none')
-        plt.plot(x_test, cond_mode.detach().numpy(), 'r.')
-        plt.title(title)
-        plt.savefig(f'artifacts/{title}.png')
-        plt.close()
+        plot_histogram(y_pred, y_test_flat, run_path, args.target)
+        plot_scatter(y_pred, y_test_flat, run_path, args.target)
 
-        plt.figure(figsize=(8, 8))
-        title = "Means"
-        plt.plot(x_train, y_train, 'go', alpha=0.5, markerfacecolor='none')
-        plt.plot(x_test, mu.detach().numpy().reshape(-1, num_mixtures), 'r.')
-        plt.title(title)
-        plt.savefig(f'artifacts/{title}.png')
-        plt.close()
+        # Calculate and log R^2 score
+        r2 = np.corrcoef(y_test_flat, y_pred)[0, 1] ** 2
+        mae = mean_absolute_error(y_test_flat, y_pred)
+        mse = mean_squared_error(y_test_flat, y_pred)
+        logger.info(f"R^2 Score: {r2:.4f}")
+        logger.info(f"MAE: {mae:.4f}")
+        logger.info(f"MSE: {mse:.4f}")
 
-        plt.figure(figsize=(8, 8))
-        title = "Sampled Predictions"
-        plt.plot(x_train, y_train, 'go', alpha=0.5, markerfacecolor='none')
-        for i in range(preds.shape[1]):
-            plt.plot(x_test, preds[:, i, :].detach().numpy(), 'r.', alpha=0.3)
-        plt.title(title)
-        plt.savefig(f'artifacts/{title}.png')
-        plt.close()
+        # Save R^2 score, MAE, and MSE on a csv with all hyperparameters as columns
+        metrics_file = f"{artifacts_path}/metrics_scores.csv"
+        file_exists = os.path.isfile(metrics_file)
+
+        # TODO: This is not the best way to save metrics, but it works for now
+        with open(metrics_file, "a", newline='') as f:
+            writer = csv.writer(f)
+            if not file_exists:
+                # Write header if file does not exist
+                writer.writerow(["run_path", "dataset_name", "r2", "mae", "mse",
+                                 "num_hidden", "num_mixtures", "learning_rate",
+                                 "batch_size", "num_workers", "min_epochs",
+                                 "training_split", "validation_split"])
+            # Write metrics
+            writer.writerow([run_path, dataset_name, r2, mae, mse,
+                             num_hidden, num_mixtures, model.learning_rate,
+                             batch_size, num_workers, min_epochs,
+                             training_split, validation_split])
+
+    logger.info("All done! Have a nice day! 😊")

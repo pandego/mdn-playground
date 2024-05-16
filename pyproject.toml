@@ -15,6 +15,12 @@ matplotlib = "^3.8.4"
 loguru = "^0.7.2"
 lightning = {extras = ["extra"], version = "^2.2.4"}
 pandas = "^2.2.2"
+seaborn = "^0.13.2"
+torchvision = "^0.18.0"
+scikit-learn = "^1.4.2"
+plotly = "^5.22.0"
+kaleido = "0.2.1"
+statsmodels = "^0.14.2"
 
 [tool.poetry.group.test.dependencies]
 pytest = "^8.2.0"

@@ -1,7 +1,7 @@
 import numpy as np
+import pandas as pd
 import torch
 from torch.utils.data import Dataset, DataLoader
-import pandas as pd
 
 
 class CustomDataset(Dataset):
@@ -13,8 +13,16 @@ class CustomDataset(Dataset):
         return len(self.x)
 
     def __getitem__(self, idx):
-        return torch.tensor(self.x[idx], dtype=torch.float32), torch.tensor(self.y[idx],
-                                                                            dtype=torch.float32)
+        return (
+            torch.tensor(
+                self.x[idx],
+                dtype=torch.float32
+            ),
+            torch.tensor(
+                self.y[idx],
+                dtype=torch.float32
+            )
+        )
 
 
 def generate_data(n=2500):

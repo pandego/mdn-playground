@@ -1,11 +1,10 @@
-import lightning.pytorch.loggers
+import matplotlib.pyplot as plt
+import numpy as np
 import pytorch_lightning as pl
+import torch
 from lightning.pytorch.loggers import TensorBoardLogger, CSVLogger
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
-import numpy as np
-import matplotlib.pyplot as plt
-import torch
-from loguru import logger
+
 from dataset import generate_data, get_dataloader
 from model import MDNModel
 
