@@ -2,8 +2,12 @@
 import numpy as np
 import torch
 
+# Set random seed for reproducibility
+torch.manual_seed(42)
+np.random.seed(42)
 
-def sample_mode(alpha: torch.Tensor, mu: torch.Tensor) -> torch.Tensor:
+
+def get_sample_mode(alpha: torch.Tensor, mu: torch.Tensor) -> torch.Tensor:
     """
     Selects the mode of the mixture components for each data point.
 
@@ -25,13 +29,11 @@ def sample_mode(alpha: torch.Tensor, mu: torch.Tensor) -> torch.Tensor:
 
     """
     _, max_component = torch.max(alpha, 1)
-    out = torch.zeros_like(mu[:, 0, :])
-    for i in range(alpha.shape[0]):
-        out[i] = mu[i, max_component[i], :]
-    return out
+    cond_mode = mu[torch.arange(alpha.shape[0]), max_component]
+    return cond_mode
 
 
-def sample_preds(
+def get_sampled_preds(
     alpha: torch.Tensor, sigma: torch.Tensor, mu: torch.Tensor, samples: int = 10
 ) -> torch.Tensor:
     """
@@ -60,14 +62,14 @@ def sample_preds(
 
     """
     N, K, T = mu.shape
-    out = torch.zeros(N, samples, T)
+    sampled_preds = torch.zeros(N, samples, T)
     for i in range(N):
         for j in range(samples):
             u = np.random.uniform()
-            prob_sum = 0
+            cum_alpha = 0
             for k in range(K):
-                prob_sum += alpha[i, k]
-                if u < prob_sum:
-                    out[i, j] = torch.normal(mu[i, k], sigma[i, k])
+                cum_alpha += alpha[i, k]
+                if u < cum_alpha:
+                    sampled_preds[i, j] = torch.normal(mu[i, k], sigma[i, k])
                     break
-    return out
+    return sampled_preds

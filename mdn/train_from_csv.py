@@ -5,14 +5,13 @@ import os
 from datetime import datetime
 
 import numpy as np
-import pytorch_lightning as pl
 import torch
 from dataset import generate_data, get_dataloader, load_data_from_csv
 from lightning.pytorch.loggers import CSVLogger, TensorBoardLogger
 from loguru import logger
 from model import MDNModel
 from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
-from sampler import sample_mode, sample_preds
+from sampler import get_sample_mode, get_sampled_preds
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 from visualization import (
     plot_conditional_mode,
@@ -22,6 +21,10 @@ from visualization import (
     plot_scatter,
     plot_train_val_data,
 )
+
+# Set random seed for reproducibility
+torch.manual_seed(42)
+np.random.seed(42)
 
 
 def parse_args():
@@ -49,7 +52,7 @@ if __name__ == "__main__":
     time_now = datetime.now().strftime("%Y%m%d_%H%M%S")
     artifacts_path = f"artifacts/{dataset_name}"
     # run_path = f"{artifacts_path}/{time_now}"  # comment if you use parallelism
-    run_path = f"{artifacts_path}/{'reference_run'}"  # uncomment if you use parallelism
+    run_path = f"{artifacts_path}/{'test_1'}"  # uncomment if you use parallelism
     os.makedirs(run_path, exist_ok=True)
 
     if args.csv:
@@ -58,7 +61,6 @@ if __name__ == "__main__":
         (x, y), _ = generate_data()
 
     # Shuffle the data prior to splitting
-    np.random.seed(42)
     idx = np.random.permutation(len(x))
     x, y = x[idx], y[idx]
 
@@ -166,8 +168,9 @@ if __name__ == "__main__":
     x_test_tensor = torch.tensor(x_test, dtype=torch.float32)
     alpha, sigma, mu = model(x_test_tensor)
 
-    cond_mode = sample_mode(alpha, mu)
-    preds = sample_preds(alpha, sigma, mu, samples=10)
+    cond_mode = get_sample_mode(alpha, mu)
+
+    preds = get_sampled_preds(alpha, sigma, mu, samples=10)
 
     if not args.csv:
         plot_conditional_mode(x_train, y_train, x_test, cond_mode, run_path)
