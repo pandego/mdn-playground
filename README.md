@@ -106,7 +106,7 @@ poetry install
 - Run the following command for help:
 ```shell
 >>> cd mdn/
->>> python mdn/train_from_csv.py --help
+>>> python train_from_csv.py --help
 
 usage: train_from_csv.py [-h] [--csv CSV] [--target TARGET] [--delimiter DELIMITER] [--mode {train,inference}]
 
