@@ -103,8 +103,31 @@ poetry install
 ```
 
 ### 5. Run a Sample Experiment
+- Run the following command for help:
 ```shell
-poetry run example
+>>> cd mdn/
+>>> python mdn/train_from_csv.py --help
+
+usage: train_from_csv.py [-h] [--csv CSV] [--target TARGET] [--delimiter DELIMITER] [--mode {train,inference}]
+
+Train MDN model
+
+options:
+  -h, --help            show this help message and exit
+  --csv CSV             Path to CSV file
+  --target TARGET       Target column in CSV file
+  --delimiter DELIMITER
+                        Delimiter in CSV file
+  --mode {train,inference}
+                        Mode to run the script in: 'train' or 'inference'
+```
+- Example for a quick training using the provided weather dataset:
+```shell
+>>> cd mdn/
+>>> python train_from_csv.py --csv "../data/01_raw/weather_dataset/weather_dataset_example.csv" \
+                             --target "apparent_temperature" \
+                             --delimiter ";" \
+                             --mode "train"
 ```
 
 ---

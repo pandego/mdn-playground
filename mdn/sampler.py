@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import itertools
+
 import numpy as np
 import torch
 
@@ -59,17 +61,19 @@ def get_sampled_preds(
     -------
     torch.Tensor
         The sampled predictions for each data point. Shape (N, samples, T).
-
     """
     N, K, T = mu.shape
     sampled_preds = torch.zeros(N, samples, T)
-    for i in range(N):
-        for j in range(samples):
-            u = np.random.uniform()
-            cum_alpha = 0
-            for k in range(K):
-                cum_alpha += alpha[i, k]
-                if u < cum_alpha:
-                    sampled_preds[i, j] = torch.normal(mu[i, k], sigma[i, k])
-                    break
+
+    # Generate uniform random numbers for sampling
+    uniform_samples = torch.rand(N, samples)
+
+    # Compute cumulative sum of alpha
+    cum_alpha = alpha.cumsum(dim=1)
+
+    for i, j in itertools.product(range(N), range(samples)):
+        u = uniform_samples[i, j]
+        k = torch.searchsorted(cum_alpha[i], u).item()
+        sampled_preds[i, j] = torch.normal(mu[i, k], sigma[i, k])
+
     return sampled_preds

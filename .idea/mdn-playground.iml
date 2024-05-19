@@ -5,7 +5,7 @@
       <sourceFolder url="file://$MODULE_DIR$/mdn" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/tests" isTestSource="true" />
     </content>
-    <orderEntry type="jdk" jdkName="mdn-playground" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="mdn" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
 </module>
